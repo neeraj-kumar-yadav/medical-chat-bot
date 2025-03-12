@@ -1,0 +1,8 @@
+langchain-pinecone
+pinecone-notebooks
+langchain_community
+langchain-huggingface
+langchain-text-splitters
+flask
+pypdf
+python-dotenv
