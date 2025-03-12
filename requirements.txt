@@ -1,0 +1,12 @@
+langchain-pinecone
+pinecone-notebooks
+langchain_community
+langchain-huggingface
+langchain-text-splitters
+langchain_groq
+chainlit
+matplotlib
+nltk
+pypdf
+python-dotenv
+-e .
