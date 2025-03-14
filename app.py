@@ -1,23 +1,20 @@
 import getpass
+import os
+
 from src.utils import download_embedding_model
 from src.logger import logging as log
-from langchain_pinecone import PineconeVectorStore
+from src.prompt import *
+
 import pinecone
+from langchain_pinecone import PineconeVectorStore
 from langchain_core.prompts import PromptTemplate
-from langchain_community.llms import CTransformers
 from langchain.chains import RetrievalQA
 from langchain_groq import ChatGroq
 import chainlit as cl
-import json
-import os
-import time
+
 from response_time import measure_response_time
-from src.prompt import *
+from bleu_score import compute_bleu, save_scores
 
-import nltk
-from nltk.translate.bleu_score import sentence_bleu
-
-SCORE_FILE = "bleu_scores.json"
 
 log.info("Getting credentials")
 if not os.getenv("PINECONE_API_KEY"):
@@ -49,16 +46,16 @@ chain_type_kwargs={"prompt": PROMPT}
 
 log.info("Creating LLM model")
 
-llm=CTransformers(model="llama-2-7b-chat.ggmlv3.q4_0.bin",
+'''llm=CTransformers(model="llama-2-7b-chat.ggmlv3.q4_0.bin",
                   model_type="llama",
                   config={'max_new_tokens':256,
-                          'temperature':0.8})
+                          'temperature':0.8})'''
 
-''''llm = ChatGroq(
+llm = ChatGroq(
     temperature=0.5,
     groq_api_key="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",
-    model_name="llama-3.3-70b-versatile"
-)'''
+    model_name="deepseek-r1-distill-qwen-32b"
+)
 
 # Transforming the vector store into a retriever
 log.info("Query by turning into retriever")
@@ -78,46 +75,23 @@ qa = RetrievalQA.from_chain_type(
 
 # Function to extract reference response from source documents
 def get_reference_response(query):
+    log.info(f"Fetching reference response for query: {query}")
     response = qa.invoke(query)
     retrieved_docs = response.get("source_documents", [])
 
     if retrieved_docs:
         reference_text = " ".join(doc.page_content for doc in retrieved_docs)
+        log.info("Reference response retrieved successfully")
     else:
         reference_text = "No reference found"
-
-    return reference_text
-
-# Function to compute BLEU score
-def compute_bleu_score(reference, candidate):
-    if reference == "No reference found":
-        return 0  # No meaningful reference available
-
-    reference_tokens = [reference.split()]
-    candidate_tokens = candidate.split()
+        log.warning("No reference response found")
     
-    return sentence_bleu(reference_tokens, candidate_tokens)
-
-# Function to store BLEU scores in JSON (without generated response)
-def save_bleu_score(query, bleu_score):
-    try:
-        with open(SCORE_FILE, "r") as f:
-            bleu_data = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        bleu_data = []
-
-    bleu_data.append({
-        "query": query,
-        "bleu_score": bleu_score
-    })
-
-    with open(SCORE_FILE, "w") as f:
-        json.dump(bleu_data, f, indent=4)
+    return reference_text
 
 # Chainlit Integration
 @cl.on_chat_start
 async def start():
-    log.info("Initializing Chatbot...")
+    log.info("Initializing Chatbot session...")
     cl.user_session.set("qa_chain", qa)
     msg = cl.Message(content="Hi, I am HealthMate. How can I help you today?")
     await msg.send()
@@ -125,31 +99,38 @@ async def start():
 @cl.on_message
 async def main(message: cl.Message):
     query = message.content.strip()
+    log.info(f"Received user query: {query}")
     qa_chain = cl.user_session.get("qa_chain")
 
     if query.lower() == "exit":
+        log.info("User exited the chat")
         await cl.Message(content="Take care of yourself, Goodbye!").send()
         return
 
-    model_name = "Local LLM"
+    model_name = "Cloud LLM"
 
     # Measure response time while generating output
+    log.info("Measuring response time...")
     response = measure_response_time(model_name, query, qa_chain.invoke)
-
+    
     if not response or "result" not in response:
+        log.error("Response generation failed")
         await cl.Message(content="Sorry, I couldn't process your request.").send()
         return
 
     generated_response = response["result"]
+    log.info("Response successfully generated")
 
     # Get reference response
     reference_response = get_reference_response(query)
 
     # Compute BLEU score
-    bleu_score = compute_bleu_score(reference_response, generated_response)
+    bleu_score = compute_bleu(reference_response, generated_response)
+    log.info(f"Computed BLEU Score: {bleu_score:.4f}")
 
-    # Store BLEU score in JSON file (without generated response)
-    save_bleu_score(query, bleu_score)
+    # Store BLEU score in JSON file
+    save_scores(query, bleu_score)
+    log.info("Saved BLEU score")
 
     # Display response & BLEU score in the terminal
     print("\n--- Chatbot Response ---")
@@ -159,3 +140,4 @@ async def main(message: cl.Message):
 
     msg = cl.Message(content=generated_response)
     await msg.send()
+    log.info("Response sent to user")
