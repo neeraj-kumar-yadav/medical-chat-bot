@@ -133,7 +133,8 @@ async def main(message: cl.Message):
     log.info("Saved BLEU score")
 
     # Display response & BLEU score in the terminal
-
+    print("\n--- Chatbot Response ---")
+    print(f"Query: {query}")
     print(f"Generated Response: {generated_response}")
     print(f"✅ BLEU Score: {bleu_score:.4f}\n")
 
