@@ -74,5 +74,10 @@ def plot_response_times():
     # Increase space for the title
     plt.title("Response Time Comparison: Locally stored LLM vs Cloud LLM", fontsize=13)
 
+    plt.legend(fontsize=10)
+    plt.grid()
+
+    plt.tight_layout(rect=[0, 0, 1, 0.85])
+
     plt.savefig("response_time_comparison_fixed.png", dpi=600, bbox_inches="tight")
     plt.show()
