@@ -7,18 +7,7 @@ import logging
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s]: %(message)s:')
 
 
-list_of_files = [
-    "src/__init__.py",
-    "src/utils.py",
-    "src/prompt.py",
-    ".env",
-    "setup.py",
-    "research/trials.ipynb",
-    "app.py",
-    "store_index.py",
-    "static/.gitkeep",
-    "templates/chat.html"
-]
+
 
 
 for filepath in list_of_files:
