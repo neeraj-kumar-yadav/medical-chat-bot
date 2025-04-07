@@ -60,7 +60,7 @@ This generates a graph (`chatbot_bleu_performance.png`) showing chatbot accuracy
 │   ├── prompt.py
 ├── research/
 │   ├── trials.ipynb
-├── app.py                 # Main chatbot script
+├── app.py                 # Main script
 ├── store_index.py         # Stores vector embeddings
 ├── plot_bleu.py           # BLEU score plotting script
 ├── requirements.txt       # Project dependencies
