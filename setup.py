@@ -19,8 +19,8 @@ def get_requirements() -> List[str]:
 setup(
     name="Medical Chatbot",
     version="0.0.1",
-    author="Gaurav",
-    author_email="gsr094@gmail.com",
+    author="Neeraj",
+    author_email="neerajyadavkhg@gmail.com",
     packages=find_packages(),
     install_requires=get_requirements()
 )
